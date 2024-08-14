@@ -106,7 +106,11 @@ def is_valid_urlencoded(data: Any) -> bool:
         return True
     except (TypeError, ValueError):
         return False
-
+    
+def merge_body(old: Any, new: Any) -> Any:
+    if isinstance(old, dict) and isinstance(new, dict):
+        return {**old, **new}
+    return new
 
 @st.composite  # type: ignore
 def get_case_strategy(
@@ -197,6 +201,9 @@ def get_case_strategy(
             skip(operation.verbose_name)
         else:
             reject()
+    new_body = body_.value
+    if operation.body_to_merge:
+        new_body = merge_body(body_.value, operation.body_to_merge)
     instance = Case(
         operation=operation,
         generation_time=time.monotonic() - start,
@@ -205,7 +212,7 @@ def get_case_strategy(
         headers=CaseInsensitiveDict(headers_.value) if headers_.value is not None else headers_.value,
         cookies=cookies_.value,
         query=query_.value,
-        body=body_.value,
+        body=new_body,
         data_generation_method=generator,
         meta=GenerationMetadata(
             query=query_.generator,

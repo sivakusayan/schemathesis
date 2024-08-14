@@ -611,6 +611,7 @@ class APIOperation(Generic[P, C]):
     cookies: ParameterSet[P] = field(default_factory=ParameterSet)
     query: ParameterSet[P] = field(default_factory=ParameterSet)
     body: PayloadAlternatives[P] = field(default_factory=PayloadAlternatives)
+    body_to_merge: Any = None
     case_cls: type[C] = Case  # type: ignore
 
     def __post_init__(self) -> None:

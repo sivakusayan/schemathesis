@@ -60,7 +60,7 @@ class Link(StatefulTest):
             operation=operation,
             parameters=definition.get("parameters", {}),
             request_body=definition.get("requestBody", NOT_SET),  # `None` might be a valid value - `null`
-            merge_body=extension.get("merge_body", True) if extension is not None else True,
+            merge_body=True, 
         )
 
     def parse(self, case: Case, response: GenericResponse) -> ParsedData:
@@ -74,7 +74,9 @@ class Link(StatefulTest):
             parameters[parameter] = evaluated
         body = expressions.evaluate(self.request_body, context, evaluate_nested=True)
         if self.merge_body:
-            body = merge_body(case.body, body)
+            body = merge_body(case.query, body)
+        
+        self.operation.body_to_merge = body
         return ParsedData(parameters=parameters, body=body)
 
     def make_operation(self, collected: list[ParsedData]) -> APIOperation:
@@ -125,7 +127,7 @@ class Link(StatefulTest):
                 else:
                     # No options were gathered for this parameter - use the original one
                     components[LOCATION_TO_CONTAINER[location]].add(parameter)
-        return self.operation.clone(**components)
+        return self.operation
 
     def _get_container_by_parameter_name(self, full_name: str, templates: dict[str, dict[str, dict[str, Any]]]) -> list:
         """Detect in what request part the parameters is defined."""
@@ -206,6 +208,7 @@ class OpenAPILink(Direction):
             for parameter, expression in self.definition.get("parameters", {}).items()
         ]
         self.body = self.definition.get("requestBody", NOT_SET)
+        self.merge_body = True
         if extension is not None:
             self.merge_body = extension.get("merge_body", True)
 
